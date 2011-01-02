@@ -23,7 +23,7 @@ The result should be::
  {:result-msg element Item does not match [a-z].*., 
   :node-path /xs:schema/xs:element[1]/xs:complexType[1]/xs:sequence[1]/xs:element[3]} 
 
-The result is the formated message and the path - in the proven xml - to the node that fails. 
+The result is the formated message and the path - in the xmldoc - to the node that fails. 
 
 Regarding the xml::
 
