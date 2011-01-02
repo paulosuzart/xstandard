@@ -56,7 +56,7 @@
             p (:path c)]
         (for [node (flatten (list (xml/query p nss xmldoc)))
               :when (not (v node))]
-          {:msg (format (:msg c) (name-attr node)) :path (xml/node-path node)})))))
+          {:result-msg (format (:msg c) (name-attr node)) :node-path (xml/node-path node)})))))
 
 
 (defn check-default
