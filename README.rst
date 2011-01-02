@@ -2,7 +2,9 @@
 Intro
 ===========
 
-A really simple abstraction on top of `saxon`_. xstandard works with assertions lists that are applyed against a XML.
+A really simple abstraction on top of `saxon`_. xstandard works with assertions lists that are applyied against a XML.
+
+An assertion is a map literal containing three keys: msg shows a message at the end of assertion application (can receive only one parameter, the currente analyzed node); path is used to select the node (an xpath expression); validate any function that receives the current node as argument to be validated.
 
 xstandard comes with default assertions and helper functions to help you create your own assertions. 
 
