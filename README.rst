@@ -12,7 +12,7 @@ xstandard comes with default assertions and helper functions to help you create 
 Sample assertion
 ================
 
-A simple assertion to check if a given element attribute matches a given format::
+A simple assertion to select any element with the name attribute (:path "//xsd:element[@name]) and validade it againts attr-matches (a sample validator)::
 
  {:msg "element %s does not match [a-z].*." :path "//xsd:element[@name]" :validator (attr-matches "name" #"[a-z].*")}
 
@@ -20,7 +20,7 @@ The result should be::
   
  :msg element Item does not match [a-z].*., :path /xs:schema/xs:element[1]/xs:complexType[1]/xs:sequence[1]/xs:element[3]} 
 
-Taking the xml::
+Regarding the xml::
 
   <?xml version="1.0" encoding="ISO-8859-1" ?>
   <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://www.example.com/schema" elementFormDefault="qualified">
