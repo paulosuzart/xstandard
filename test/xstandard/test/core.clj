@@ -2,7 +2,7 @@
   (:use [xstandard.core :as xs] :reload)
   (:use [clojure.test]))
 
-(def xmldoc (xs/make-xml "untitled.xsd"))
+(def xmldoc (xs/make-xml "./test/untitled.xsd"))
 
 ;; this is a dummy test. TODO cover all the lib.
 (deftest test-total
