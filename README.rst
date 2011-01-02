@@ -67,7 +67,8 @@ Regarding the xml::
 ====
 TODO
 ====
-Add (as-html (check-default xmldoc)) to return the result in HTML.
-Add (as-json (check-default xmldoc)) to return the result as json.
-Add (as-xml (check-default xmldoc)) to return the result in xml.
-Actually use the options arg of check to filter the results by valid results, invalid results, element, etc.
+#. Add (as-html (check-default xmldoc)) to return the result in HTML.
+#. Add (as-json (check-default xmldoc)) to return the result as json.
+#. Add (as-xml (check-default xmldoc)) to return the result in xml.
+#. Actually use the options arg of check to filter the results by valid results, invalid results, element, etc.
+#. Maybe put it on top of compojure
