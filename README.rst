@@ -4,7 +4,7 @@ Intro
 
 A really simple abstraction on top of `saxon`_. xstandard works with assertions lists that are applyied against a XML.
 
-An assertion is a map literal containing three keys: msg shows a message at the end of assertion application (can receive only one parameter, the currente analyzed node); path is used to select the node (an xpath expression); validate any function that receives the current node as argument to be validated.
+An assertion is a map literal containing three keys: msg shows a message at the end of assertion application (can receive only one parameter, the current analyzed node); path is used to select the node (an xpath expression); validate any function that receives the current node as argument to be validated.
 
 xstandard comes with default assertions and helper functions to help you create your own assertions. 
 
@@ -73,3 +73,4 @@ TODO
 #. Add (as-xml (check-default xmldoc)) to return the result in xml.
 #. Actually use the options arg of check to filter the results by valid results, invalid results, element, etc.
 #. Maybe put it on top of compojure
+#. Use an xpath to select the node identifyer, not just the attribute named 'name'.
