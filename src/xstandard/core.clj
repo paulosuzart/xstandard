@@ -41,7 +41,7 @@
 
 
 (defn make-xml
-  "Utility method to help build xml from file path"
+  "Utility method to help build xml from file path. For file only"
   [p]
   (try
     (xml/compile-xml (java.io.File. p))
