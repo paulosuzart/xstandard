@@ -14,7 +14,7 @@ xstandard comes with default assertions and helper functions to help you create 
 Sample assertion
 ================
 
-A simple assertion to select any element with the name attribute (:path "//xsd:element[@name]) and validade it againts attr-matches (a sample validator)::
+A simple assertion to select all elements with 'name' attribute (:path "//xsd:element[@name]) and validade them against attr-matches (a sample validator)::
 
  {:msg "element %s does not match [a-z].*." :path "//xsd:element[@name]" :validator (attr-matches "name" #"[a-z].*")}
 
