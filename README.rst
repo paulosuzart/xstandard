@@ -23,7 +23,8 @@ The result should be::
  {:result-msg element Item does not match [a-z].*., 
   :node-path /xs:schema/xs:element[1]/xs:complexType[1]/xs:sequence[1]/xs:element[3]} 
 
-The result is the formated message and the path - in the xmldoc - to the node that fails. 
+The result (a map) is the formated message and the path - in the xmldoc - to the node that fails. 
+Using the macro as-html allows wrapps the result as html string.
 
 Regarding the xml::
 
@@ -68,7 +69,6 @@ Regarding the xml::
 ====
 TODO
 ====
-#. Add (as-html (check-default xmldoc)) to return the result in HTML.
 #. Add (as-json (check-default xmldoc)) to return the result as json.
 #. Add (as-xml (check-default xmldoc)) to return the result in xml.
 #. Actually use the options arg of check to filter the results by valid results, invalid results, element, etc.

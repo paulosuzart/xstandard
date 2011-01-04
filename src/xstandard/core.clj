@@ -1,4 +1,6 @@
 (ns xstandard.core
+  (:use [hiccup.core :only [html]]
+        [clojure.java.io :only [file]])
   (:require [saxon :as xml]))
 
 (defonce *nss* {:xsd "http://www.w3.org/2001/XMLSchema"})
@@ -34,18 +36,29 @@
 (defonce
   ^{:private true}
   *default-assertions*
-  (list {:msg "element %s does not match [a-z].*." :path "//xsd:element[@name]" :validator (attr-matches "name" #"[a-z].*")}
-        {:msg "type %s does not match [A-Z].*Type." :path "//xsd:complexType[@name]" :validator (attr-matches "name" #"[A-Z].*Type")}
-        {:msg "schema hasn't attr elementFormDefault=\"qualified\"" :path "/xsd:schema" :validator (attr-eq "elementFormDefault" "qualified")}
-        {:msg "schema hasn't targetNamespace attr" :path "/xsd:schema" :validator (attr-present "targetNamespace")}))
+  (list {:error-msg "element %s does not match [a-z].*."
+         :path "//xsd:element[@name]"
+         :validator (attr-matches "name" #"[a-z].*")
+         :node-name name-attr}
+
+    {:error-msg "type %s does not match [A-Z].*Type."
+     :path "//xsd:complexType[@name]"
+     :validator (attr-matches "name" #"[A-Z].*Type")
+     :node-name name-attr}
+
+    {:error-msg "schema hasn't attr elementFormDefault=\"qualified\""
+     :path "/xsd:schema"
+     :validator (attr-eq "elementFormDefault" "qualified")}
+
+    {:error-msg "schema hasn't targetNamespace attr"
+     :path "/xsd:schema"
+     :validator (attr-present "targetNamespace")}))
 
 
 (defn make-xml
   "Utility method to help build xml from file path. For file only"
   [p]
-  (try
-    (xml/compile-xml (java.io.File. p))
-    (catch java.io.IOException ex (.printStackTrace ex))))
+  (xml/compile-xml (file p)))
 
 (defn check
   "main method takes an xml compiled and apply the assertions"
@@ -53,13 +66,29 @@
   (flatten
     (for [c assertions]
       (let [v (:validator c)
-            p (:path c)]
+            p (:path c)
+            node-name (or (:node-name c) name-attr)]
         (for [node (flatten (list (xml/query p nss xmldoc)))
               :when (not (v node))]
-          {:result-msg (format (:msg c) (name-attr node)) :node-path (xml/node-path node)})))))
+          {:result-msg (format (:error-msg c) (node-name node))
+           :node-path (xml/node-path node)})))))
 
 
 (defn check-default
   "wraps the check function with default assertions and namespaces"
-  [xmldoc]
-  (check xmldoc *default-assertions* *nss*))
+  [xmldoc & options]
+  (check xmldoc *default-assertions* *nss* options))
+
+
+(defmacro as-html [& f]
+      `(html [:html
+              [:head
+               [:title "xstandard assertion result."]]
+              [:body
+                [:h2 {:class "header"} "Assertion result."]
+               [:table {:class "result-table"}
+                [:tr {:class "result-head"} [:th "Result Message"] [:th "Path to node in the XML document"]]
+                 (for [r# ~@f]
+                        [:tr
+                           [:td (:result-msg r#)]
+                           [:td (:node-path r#)]])]]]))
