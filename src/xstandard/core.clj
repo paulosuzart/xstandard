@@ -39,12 +39,12 @@
   (list {:error-msg "element %s does not match [a-z].*."
          :path "//xsd:element[@name]"
          :validator (attr-matches "name" #"[a-z].*")
-         :node-name name-attr}
+         :node-name "data(./@name)"}
 
     {:error-msg "type %s does not match [A-Z].*Type."
      :path "//xsd:complexType[@name]"
      :validator (attr-matches "name" #"[A-Z].*Type")
-     :node-name name-attr}
+     :node-name "data(./@name)"}
 
     {:error-msg "schema hasn't attr elementFormDefault=\"qualified\""
      :path "/xsd:schema"
@@ -67,10 +67,10 @@
     (for [c assertions]
       (let [v (:validator c)
             p (:path c)
-            node-name (or (:node-name c) name-attr)]
+            node-name (or (:node-name c) "data(./@name)")]
         (for [node (flatten (list (xml/query p nss xmldoc)))
               :when (not (v node))]
-          {:result-msg (format (:error-msg c) (node-name node))
+          {:result-msg (format (:error-msg c) (xml/query node-name nss node))
            :node-path (xml/node-path node)})))))
 
 
@@ -80,7 +80,9 @@
   (check xmldoc *default-assertions* *nss* options))
 
 
-(defmacro as-html [& f]
+(defmacro as-html
+  "Simply wrapps the execution of check or check-default in html output."
+  [& f]
       `(html [:html
               [:head
                [:title "xstandard assertion result."]]

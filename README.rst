@@ -24,7 +24,7 @@ The result should be::
   :node-path /xs:schema/xs:element[1]/xs:complexType[1]/xs:sequence[1]/xs:element[3]} 
 
 The result (a map) is the formated message and the path - in the xmldoc - to the node that fails. 
-Using the macro as-html allows wrapps the result as html string.
+Using the macro ``as-html`` wrapps the result as html string with hiccup.
 
 Regarding the xml::
 
@@ -69,8 +69,10 @@ Regarding the xml::
 ====
 TODO
 ====
+#. Add (as-html (check-default xmldoc)) to return the result as html. OK
 #. Add (as-json (check-default xmldoc)) to return the result as json.
 #. Add (as-xml (check-default xmldoc)) to return the result in xml.
 #. Actually use the options arg of check to filter the results by valid results, invalid results, element, etc.
-#. Maybe put it on top of compojure
+#. Maybe put it on top of compojure.
 #. Use an xpath to select the node identifyer, not just the attribute named 'name'.
+#. Validate assertions.
