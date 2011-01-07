@@ -84,7 +84,7 @@
 
 (defmacro defassertion [name p & options]
   (let [[name options] (name-with-attributes name options)]
-    `(def ~name {:path ~p :assertion (make-assertion ~(keyword name) ~p ~@options)})))
+    `(def ~name {:path (symbol ~p) :assertion (make-assertion ~(keyword name) ~p ~@options)})))
 
 (defmacro defassertions [name & a]
   (let [[name a] (name-with-attributes name a)]
@@ -92,15 +92,17 @@
       (let [asset# {:set-name ~name :assertions {}}
             assertions# (list ~@a)]
         (loop [ss# asset# as# assertions#]
-          (when (not (empty as#))
-            (let [c# (first as#)
+          (if (empty? as#)
+                ss#
+            (let [[c# & rest#] as#
                   p# (:path c#)
                   pre# (p# (:assertions ss#))]
-              (recur (assoc-in ss# [:assertions] (cons c# pre#)) (rest as#)))))))))
+              (recur (assoc-in ss# [:assertions p#] (cons c# pre#)) rest#))))))))
 
 (defn run [aset nss xmldoc]
   (flatten
-    (for [a aset]
+    (for [[p a] (:assertions aset)
+          n (xml/query (name p) nss xmldoc)]
       (a nss xmldoc))))
 
 
