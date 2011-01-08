@@ -84,20 +84,19 @@
 
 (defmacro defassertion [name p & options]
   (let [[name options] (name-with-attributes name options)]
-    `(def ~name {:path (symbol ~p) :assertion (make-assertion ~(keyword name) ~p ~@options)})))
+    `(def ~name {:path ~p :assertion (make-assertion ~(keyword name) ~p ~@options)})))
 
 (defmacro defassertions [name & a]
   (let [[name a] (name-with-attributes name a)]
     `(def ~name
-      (let [asset# {:set-name ~name :assertions {}}
-            assertions# (list ~@a)]
-        (loop [ss# asset# as# assertions#]
+        (loop [as# (list ~@a) fs# {:set-name ~name :assertions {}}]
           (if (empty? as#)
-                ss#
+                fs#
             (let [[c# & rest#] as#
                   p# (:path c#)
-                  pre# (p# (:assertions ss#))]
-              (recur (assoc-in ss# [:assertions p#] (cons c# pre#)) rest#))))))))
+                  a# (:assertion c#)
+                  pre# (get (:assertions fs#) p#)]
+              (recur rest# (assoc-in fs# [:assertions p#] (cons a# pre#)))))))))
 
 (defn run [aset nss xmldoc]
   (flatten
@@ -107,7 +106,6 @@
 
 
 (defassertions *default-assertions*
-
     (defassertion element-name "//xsd:element[@name]"
       :msg "element %s does not match [a-z].*."
       :validator (attr-matches "name" #"[a-z].*")
@@ -125,7 +123,6 @@
     (defassertion target-ns "/xsd:schema"
       :msg "schema hasn't targetNamespace attr"
       :validator (attr-present "targetNamespace")))
-
 
 
 
@@ -156,6 +153,7 @@
 
 (def xmldoc (make-xml "/Users/paulo/Documents/workspace/cljprojects/xstandard/test/sample_1.xsd"))
 
+(println *default-assertions*)
 
-(let [result (run *default-assertions* *nss* xmldoc)]
-  (println result))
+;(let [result (run *default-assertions* *nss* xmldoc)]
+;  (println result))
