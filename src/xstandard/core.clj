@@ -14,7 +14,9 @@
   *nss* {:xsd "http://www.w3.org/2001/XMLSchema"})
 
 (defn get-attr
-  "Return the `attr` value of `n`. Uses the xpath `data(./{attr})`."
+  "Return the `attr` value of `n`. Uses the xpath `data(./name)`.
+   Usage: `(get-attr n \"name\")`. Returns the attribute name if present.
+    "
   [n attr]
   (xml/query (str "data(./@" attr ")") n))
 
@@ -22,8 +24,10 @@
   "Wraps a call to `get-attr`. Returns the `name` attribute of `n`."
   [n] (get-attr n "name"))
 
-(defn attr-present [attr]
-  "`true` if the `attr` is present on `n`."
+(defn attr-present
+  "`true` if the `attr` is present on `n`.
+  Usage: `(attr-present "targetNamespace")`."
+  [attr]
   (fn [n]
     (xml/query (str "exists(./@" attr ")") n)))
 

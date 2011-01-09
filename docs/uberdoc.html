@@ -2539,17 +2539,19 @@ validate function that receives the current node as argument to be validated.</p
 (xml/set-config-property! :line-numbering true)</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">
 (defonce ^{:doc &quot;Default prefix/namespace used by xstandard&quot;}
-  *nss* {:xsd &quot;http://www.w3.org/2001/XMLSchema&quot;})</pre></td></tr><tr><td class="docs"><p>Return the <code>attr</code> value of <code>n</code>. Uses the xpath <code>data(./{attr})</code>.</p>
+  *nss* {:xsd &quot;http://www.w3.org/2001/XMLSchema&quot;})</pre></td></tr><tr><td class="docs"><p>Return the <code>attr</code> value of <code>n</code>. Uses the xpath <code>data(./name)</code>.
+Usage: <code>(get-attr n "name")</code>. Returns the attribute name if present.</p>
 </td><td class="codes"><pre class="brush: clojure">
 (defn get-attr
   [n attr]
   (xml/query (str &quot;data(./@&quot; attr &quot;)&quot;) n))</pre></td></tr><tr><td class="docs"><p>Wraps a call to <code>get-attr</code>. Returns the <code>name</code> attribute of <code>n</code>.</p>
 </td><td class="codes"><pre class="brush: clojure">
 (defn name-attr
-  [n] (get-attr n &quot;name&quot;))</pre></td></tr><tr><td class="docs">
+  [n] (get-attr n &quot;name&quot;))</pre></td></tr><tr><td class="docs"><p><code>true</code> if the <code>attr</code> is present on <code>n</code>.
+  Usage: <code>(attr-present "targetNamespace")</code>.</p>
 </td><td class="codes"><pre class="brush: clojure">
-(defn attr-present [attr]
-  &quot;`true` if the `attr` is present on `n`.&quot;
+(defn attr-present
+  [attr]
   (fn [n]
     (xml/query (str &quot;exists(./@&quot; attr &quot;)&quot;) n)))</pre></td></tr><tr><td class="docs"><p><code>true</code> if the <code>attr</code> of <code>n</code> is equal to <code>v</code></p>
 </td><td class="codes"><pre class="brush: clojure">
