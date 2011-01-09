@@ -23,7 +23,10 @@ A simple assertion to select all elements with 'name' attribute (:path "//xsd:el
 
 The result should be::
   
- {:assertion :element-name, :status false, :display-name Item, :details {:result-msg element Item does not match [a-z].*., :line 25, :path /xs:schema/xs:element[1]/xs:complexType[1]/xs:sequence[1]/xs:element[3]}}
+ {:assertion :element-name, :status false, :display-name Item, 
+  :details {:result-msg element Item does not match [a-z].*., 
+            :line 25, 
+            :path /xs:schema/xs:element[1]/xs:complexType[1]/xs:sequence[1]/xs:element[3]}}
 
 The result (a map) is the formated message and the path - in the xmldoc - to the node that fails. 
 
