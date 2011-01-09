@@ -46,34 +46,30 @@
   [n]
   (.getLineNumber n))
 
-(defn check
-  "main method takes an xml compiled and apply the assertions"
-  [xmldoc assertions nss & options]
-  (flatten
-    (for [c assertions]
-      (let [v (:validator c)
-            p (:path c)
-            node-name (or (:node-name c) "data(./@name)")]
-        (for [node (flatten (list (xml/query p nss xmldoc)))
-              :when (not (v node))]
-          {:result-msg (format (:error-msg c) (xml/query node-name nss node))
-           :node-path (xml/node-path node)
-           :line (line node)})))))
-
 
 (defn make-assertion
-  "Actually builds an assertion fn."
+  "Actually builds an assertion as fn.
+  fn get the namespaces and a single node selected by any other part of the code. The result is:
+
+  {:assertion assertion name as symbol
+   :status true or false ;true the node passed, false otherwise.
+   :display-name resunting name
+   :details {:result-msg formated result message.
+             :line the node line
+             :path to the node}}.
+
+   Note however, that details will be returned for failed nodes."
   [aname p & {:keys [validator msg display-name]}]
-  (fn [nss doc]
+  (fn [nss n]
     (let [display-name-exp (xml/compile-xpath (or display-name "data(./@name)") nss)
           p-exp (xml/compile-xpath p nss)
-          n (p-exp doc)
           result-msg (cond (empty? msg) "Assertion failed."
-        :else (format msg (display-name-exp n)))
+                      :else (format msg (display-name-exp n)))
           line-number (line n)
           result-status (validator n)]
       {:assertion aname
        :status result-status
+       :display-name (or (display-name-exp n) (.toString (xml/node-name n)))
        :details
        (if (not result-status)
          {:result-msg result-msg
@@ -82,27 +78,60 @@
          {})
        })))
 
-(defmacro defassertion [name p & options]
+
+(defmacro defassertion
+  "An assertion is supposed to be created i.e.:
+    (defassertion element-name \"//xsd:element[@name]\"
+      :msg \"element %s does not match [a-z].*.\"
+      :validator (attr-matches \"name\" #\"[a-z].*\")
+      :display-name \"data(./@name)\")
+
+      A name should be passed to label the assertion. Assertions becomes Vars in the namespace. p is the string path (in xpath) to the node(s)."
+  [name p & options]
   (let [[name options] (name-with-attributes name options)]
-    `(def ~name {:path ~p :assertion (make-assertion ~(keyword name) ~p ~@options)})))
+    `(do
+        (def ~name {:path ~p :assertion (make-assertion ~(keyword name) ~p ~@options)})
+         ~name)))
 
-(defmacro defassertions [name & a]
-  (let [[name a] (name-with-attributes name a)]
-    `(def ~name
-        (loop [as# (list ~@a) fs# {:set-name ~name :assertions {}}]
-          (if (empty? as#)
-                fs#
-            (let [[c# & rest#] as#
-                  p# (:path c#)
-                  a# (:assertion c#)
-                  pre# (get (:assertions fs#) p#)]
-              (recur rest# (assoc-in fs# [:assertions p#] (cons a# pre#)))))))))
 
-(defn run [aset nss xmldoc]
+(defn make-assertions
+  "Actually builds a set of assertions. To optimize the performance, all assertions are grouped by path. That is, defassertions should produce something like:
+
+  {:set-name myAssertions
+   :assertions {/xsd:schema (a b),  //xsd:element (c)}
+
+   Where a, b and c are assertions defined by defassertion."
+
+  [n assertions]
+  (loop [as assertions
+         fs {:set-name n}]
+    (if (empty? as)
+          fs
+      (let [[c & rest] as
+             p (:path c)
+             a (:assertion c)]
+        (recur rest (update-in fs [:assertions p] #(cons a %)))))))
+
+
+(defmacro defassertions
+  "A macro to prepare the definition of a set of assertions.
+  name is the name of the set and a* the assertions. i.e.:
+
+  (defassertions my-set (defassertion ...) (defassertion ...))"
+
+  [name & a]
+  (let [[n a] (name-with-attributes name a)
+        sname (str name)]
+    `(def ~n (make-assertions ~sname (list ~@a)))))
+
+(defn run
+  "Run every assertion path againts the xmldocument and applies every found node to every assertion set for that path."
+  [aset nss xmldoc]
   (flatten
-    (for [[p a] (:assertions aset)
-          n (xml/query (name p) nss xmldoc)]
-      (a nss xmldoc))))
+    (for [[p a] (:assertions aset)]
+      (for [i a]
+        (for [n (flatten (list (xml/query p nss xmldoc)))]
+          (i nss n))))))
 
 
 (defassertions *default-assertions*
@@ -125,14 +154,6 @@
       :validator (attr-present "targetNamespace")))
 
 
-
-(defn check-default
-  "wraps the check function with default assertions and namespaces"
-  [xmldoc & options]
-  (check xmldoc *default-assertions* *nss* options))
-
-
-
 (defmacro as-html
   "Simply wrapps the execution of check or check-default in html output."
   [& f]
@@ -147,13 +168,3 @@
               [:tr
                [:td (:result-msg r#)]
                [:td (:node-path r#)]])]]]))
-
-
-
-
-(def xmldoc (make-xml "/Users/paulo/Documents/workspace/cljprojects/xstandard/test/sample_1.xsd"))
-
-(println *default-assertions*)
-
-;(let [result (run *default-assertions* *nss* xmldoc)]
-;  (println result))

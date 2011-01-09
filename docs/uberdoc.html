@@ -2585,16 +2585,16 @@ $(document).ready(function() {
 </td><td class="codes"><pre class="brush: clojure">
 (defn make-assertion
   [aname p &amp; {:keys [validator msg display-name]}]
-  (fn [nss doc]
+  (fn [nss n]
     (let [display-name-exp (xml/compile-xpath (or display-name &quot;data(./@name)&quot;) nss)
           p-exp (xml/compile-xpath p nss)
-          n (p-exp doc)
           result-msg (cond (empty? msg) &quot;Assertion failed.&quot;
-        :else (format msg (display-name-exp n)))
+                      :else (format msg (display-name-exp n)))
           line-number (line n)
           result-status (validator n)]
       {:assertion aname
        :status result-status
+       :node (or (display-name-exp n) (.toString (xml/node-name n)))
        :details
        (if (not result-status)
          {:result-msg result-msg
@@ -2604,31 +2604,37 @@ $(document).ready(function() {
        })))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">
 (defmacro defassertion [name p &amp; options]
-  (let [[name options] (name-with-attributes name options)]
-    `(def ~name {:path (symbol ~p) :assertion (make-assertion ~(keyword name) ~p ~@options)})))</pre></td></tr><tr><td class="docs">
+  (let [[name options] (name-with-attributes name options)]</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">    `(do
+        (def ~name {:path ~p :assertion (make-assertion ~(keyword name) ~p ~@options)})
+         ~name)))
+</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">
+(defn make-assertions [n assertions]
+  (loop [as assertions
+         fs {:set-name n}]
+    (if (empty? as)
+          fs
+      (let [[c &amp; rest] as
+             p (:path c)
+             a (:assertion c)]
+        (recur rest (update-in fs [:assertions p] #(cons a %)))))))
+</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">
 (defmacro defassertions [name &amp; a]
-  (let [[name a] (name-with-attributes name a)]
-    `(def ~name
-      (let [asset# {:set-name ~name :assertions {}}
-            assertions# (list ~@a)]
-        (loop [ss# asset# as# assertions#]
-          (if (empty? as#)
-                ss#
-            (let [[c# &amp; rest#] as#
-                  p# (:path c#)
-                  pre# (p# (:assertions ss#))]
-              (recur (assoc-in ss# [:assertions p#] (cons c# pre#)) rest#))))))))</pre></td></tr><tr><td class="docs">
+  (let [[n a] (name-with-attributes name a)
+        sname (str name)]
+    `(def ~n (make-assertions ~sname (list ~@a)))))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">
 (defn run [aset nss xmldoc]
   (flatten
-    (for [[p a] (:assertions aset)
-          n (xml/query (name p) nss xmldoc)]
-      (a nss xmldoc))))
+    (for [[p a] (:assertions aset)]
+      (for [i a]
+        (for [n (flatten (list (xml/query p nss xmldoc)))]
+          (i nss n))))))
 </pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">
-(defassertions *default-assertions*</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">
+</td><td class="codes"><pre class="brush: clojure"></pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defassertions *default-assertions*
     (defassertion element-name &quot;//xsd:element[@name]&quot;
       :msg &quot;element %s does not match [a-z].*.&quot;
       :validator (attr-matches &quot;name&quot; #&quot;[a-z].*&quot;)
@@ -2646,8 +2652,6 @@ $(document).ready(function() {
     (defassertion target-ns &quot;/xsd:schema&quot;
       :msg &quot;schema hasn't targetNamespace attr&quot;
       :validator (attr-present &quot;targetNamespace&quot;)))
-
-
 </pre></td></tr><tr><td class="docs"><p>wraps the check function with default assertions and namespaces</p>
 </td><td class="codes"><pre class="brush: clojure">
 (defn check-default
