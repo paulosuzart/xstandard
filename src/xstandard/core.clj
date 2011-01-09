@@ -1,4 +1,8 @@
 (ns xstandard.core
+  "A really simple abstraction on top of saxon.
+   xstandard works with assertions lists that are applyied against a XML.
+   An assertion is set with a message to show if it fails, a path to select the node(s) (an xpath expression) and a
+   validate function that receives the current node as argument to be validated."
   (:use [hiccup.core :only [html]]
     [clojure.contrib.def :only [name-with-attributes]]
     [clojure.java.io :only [file]])
@@ -6,57 +10,60 @@
 
 (xml/set-config-property! :line-numbering true)
 
-(defonce *nss* {:xsd "http://www.w3.org/2001/XMLSchema"})
+(defonce ^{:doc "Default prefix/namespace used by xstandard"}
+  *nss* {:xsd "http://www.w3.org/2001/XMLSchema"})
 
 (defn get-attr
-  "return the attr value of n"
+  "Return the `attr` value of `n`. Uses the xpath `data(./{attr})`."
   [n attr]
   (xml/query (str "data(./@" attr ")") n))
 
 (defn name-attr
-  "wraps a call to get-attr. Returns the name attribute of n"
+  "Wraps a call to `get-attr`. Returns the `name` attribute of `n`."
   [n] (get-attr n "name"))
 
 (defn attr-present [attr]
-  "return true if the attr is present on n"
+  "`true` if the `attr` is present on `n`."
   (fn [n]
     (xml/query (str "exists(./@" attr ")") n)))
 
 (defn attr-eq
-  "true if the attr of n is equal to v"
+  "`true` if the `attr` of `n` is equal to `v`"
   [attr v]
   (fn [n]
     (= (get-attr n attr) v)))
 
 
 (defn attr-matches
-  "validates the format of a given node n against regex"
+  "Validates the format of a given node `n` against `regex`."
   [attr regex]
   (fn [n]
     (not (nil? (re-matches regex (get-attr n attr))))))
 
 
 (defn make-xml
-  "Utility method to help build xml from file path. For file only"
+  "Utility to help build xml from file path. For file only.
+  `p` is the xml absolute path."
   [p]
   (xml/compile-xml (file p)))
 
 (defn- line
-  "Wrapps the call to .getLineNumber in the current node n"
+  "Wrapps the call to `.getLineNumber` in the current node `n`."
   [n]
   (.getLineNumber n))
 
 
-(defn make-assertion
-  "Actually builds an assertion as fn.
-  fn get the namespaces and a single node selected by any other part of the code. The result is:
 
-  {:assertion assertion name as symbol
-   :status true or false ;true the node passed, false otherwise.
-   :display-name resunting name
-   :details {:result-msg formated result message.
-             :line the node line
-             :path to the node}}.
+(defn make-assertion
+  "# Actually builds an assertion as fn.
+     fn get the namespaces and a single node selected by any other part of the code. The result is:
+
+       {:assertion assertion name as symbol
+        :status true or false ;true the node passed, false otherwise.
+        :display-name resunting name
+        :details {:result-msg formated result message.
+                  :line the node line
+                  :path to the node}}.
 
    Note however, that details will be returned for failed nodes."
   [aname p & {:keys [validator msg display-name]}]
@@ -64,7 +71,7 @@
     (let [display-name-exp (xml/compile-xpath (or display-name "data(./@name)") nss)
           p-exp (xml/compile-xpath p nss)
           result-msg (cond (empty? msg) "Assertion failed."
-                      :else (format msg (display-name-exp n)))
+        :else (format msg (display-name-exp n)))
           line-number (line n)
           result-status (validator n)]
       {:assertion aname
@@ -80,44 +87,52 @@
 
 
 (defmacro defassertion
-  "An assertion is supposed to be created i.e.:
-    (defassertion element-name \"//xsd:element[@name]\"
-      :msg \"element %s does not match [a-z].*.\"
-      :validator (attr-matches \"name\" #\"[a-z].*\")
-      :display-name \"data(./@name)\")
+  "# An assertion is supposed to be created. See *default-assertions*
 
-      A name should be passed to label the assertion. Assertions becomes Vars in the namespace. p is the string path (in xpath) to the node(s)."
+     A name should be passed to label the assertion as Var.
+     Assertions becomes Vars in the namespace.
+     `p` is the string path (in xpath) to the node(s).
+
+     `options` can be:
+
+      `:msg` message to be formated. Can take only one parameter (the node name)
+      `:validator` a function that takes the current node
+      `:display-name` a valid xpath or string to format msg with the right valie."
   [name p & options]
   (let [[name options] (name-with-attributes name options)]
     `(do
-        (def ~name {:path ~p :assertion (make-assertion ~(keyword name) ~p ~@options)})
-         ~name)))
+      (def ~name {:path ~p :assertion (make-assertion ~(keyword name) ~p ~@options)})
+      ~name)))
 
 
 (defn make-assertions
-  "Actually builds a set of assertions. To optimize the performance, all assertions are grouped by path. That is, defassertions should produce something like:
+  "# Actually builds a set of assertions.
 
-  {:set-name myAssertions
-   :assertions {/xsd:schema (a b),  //xsd:element (c)}
+     To optimize the performance, all assertions are grouped by path. That is,
+     defassertions should produce something like:
 
-   Where a, b and c are assertions defined by defassertion."
+       {:set-name myAssertions
+        :assertions {/xsd:schema (a b),
+                     //xsd:element (c)}
+
+     Where `a`, `b` and `c` are assertions defined by `defassertion` macro."
 
   [n assertions]
   (loop [as assertions
          fs {:set-name n}]
     (if (empty? as)
-          fs
+      fs
       (let [[c & rest] as
-             p (:path c)
-             a (:assertion c)]
+            p (:path c)
+            a (:assertion c)]
         (recur rest (update-in fs [:assertions p] #(cons a %)))))))
 
 
 (defmacro defassertions
   "A macro to prepare the definition of a set of assertions.
-  name is the name of the set and a* the assertions. i.e.:
+   name is the name of the set and a* the assertions. i.e.:
 
-  (defassertions my-set (defassertion ...) (defassertion ...))"
+    (defassertions my-set (defassertion ...) (defassertion ...))"
 
   [name & a]
   (let [[n a] (name-with-attributes name a)
@@ -125,7 +140,9 @@
     `(def ~n (make-assertions ~sname (list ~@a)))))
 
 (defn run
-  "Run every assertion path againts the xmldocument and applies every found node to every assertion set for that path."
+  "Run every assertion path againts the xmldocument and applies every found node to every
+  assertion set for that path.
+  `aset` is generated by `defassertions`, `nss` is a map of prefix/namespace uri and `xmldoc` is the loaded xml. "
   [aset nss xmldoc]
   (flatten
     (for [[p a] (:assertions aset)]
@@ -134,24 +151,35 @@
           (i nss n))))))
 
 
+
+;;# Default assertions provided by xstandard.
+
 (defassertions *default-assertions*
-    (defassertion element-name "//xsd:element[@name]"
-      :msg "element %s does not match [a-z].*."
-      :validator (attr-matches "name" #"[a-z].*")
-      :display-name "data(./@name)")
 
-    (defassertion type-name "//xsd:complexType[@name]"
-      :msg "type %s does not match [A-Z].*Type."
-      :validator (attr-matches "name" #"[A-Z].*Type")
-      :display-name "data(./@name)")
+;;  -    `element-name`: any element with `name` attribute should respect `[a-z].*`.
 
-    (defassertion element-form-default "/xsd:schema"
-      :msg "schema hasn't attr elementFormDefault=\"qualified\""
-      :validator (attr-eq "elementFormDefault" "qualified"))
+  (defassertion element-name "//xsd:element[@name]"
+    :msg "element %s does not match [a-z].*."
+    :validator (attr-matches "name" #"[a-z].*")
+    :display-name "data(./@name)")
 
-    (defassertion target-ns "/xsd:schema"
-      :msg "schema hasn't targetNamespace attr"
-      :validator (attr-present "targetNamespace")))
+;;  -     `type-name`: any complexType with `name` attribute should respect `[A-Z].*Type`.
+
+  (defassertion type-name "//xsd:complexType[@name]"
+    :msg "type %s does not match [A-Z].*Type."
+    :validator (attr-matches "name" #"[A-Z].*Type")
+    :display-name "data(./@name)")
+
+;;  -     `element-form-default`: the `elementFormDefault` attribute should be `qualified`.
+
+  (defassertion element-form-default "/xsd:schema"
+    :msg "schema hasn't attr elementFormDefault=\"qualified\""
+    :validator (attr-eq "elementFormDefault" "qualified"))
+
+;;  -    `target-ns`: `targetNamespace` attribute should be present.
+  (defassertion target-ns "/xsd:schema"
+    :msg "schema hasn't targetNamespace attr"
+    :validator (attr-present "targetNamespace")))
 
 
 (defmacro as-html

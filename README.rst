@@ -4,7 +4,7 @@ Intro
 
 A really simple abstraction on top of `saxon`_. xstandard works with assertions lists that are applyied against a XML.
 
-An assertion is a map literal containing three keys: msg shows a message at the end of assertion application (can receive only one parameter, the current analyzed node); path is used to select the node (an xpath expression); validate any function that receives the current node as argument to be validated.
+An assertion is set with a message to show if it fails, a path to select the node(s) (an xpath expression) and a validate function that receives the current node as argument to be validated.
 
 xstandard comes with default assertions and helper functions to help you create your own assertions. 
 
@@ -16,15 +16,36 @@ Sample assertion
 
 A simple assertion to select all elements with 'name' attribute (:path "//xsd:element[@name]) and validade them against attr-matches (a sample validator)::
 
- {:msg "element %s does not match [a-z].*." :path "//xsd:element[@name]" :validator (attr-matches "name" #"[a-z].*")}
+ (defassertion element-name "//xsd:element[@name]"
+     :msg "element %s does not match [a-z].*."
+     :validator (attr-matches "name" #"[a-z].*")
+     :display-name "data(./@name)")
 
 The result should be::
   
- {:result-msg element Item does not match [a-z].*., 
-  :node-path /xs:schema/xs:element[1]/xs:complexType[1]/xs:sequence[1]/xs:element[3]} 
+ {:assertion :element-name, :status false, :display-name Item, :details {:result-msg element Item does not match [a-z].*., :line 25, :path /xs:schema/xs:element[1]/xs:complexType[1]/xs:sequence[1]/xs:element[3]}}
 
 The result (a map) is the formated message and the path - in the xmldoc - to the node that fails. 
-Using the macro ``as-html`` wrapps the result as html string with hiccup.
+
+You can either group a bunch of assertions using defassertions macro like this::
+
+ (defassertions *default-assertions*
+    (defassertion element-name "//xsd:element[@name]"
+      :msg "element %s does not match [a-z].*."
+      :validator (attr-matches "name" #"[a-z].*")
+      :display-name "data(./@name)")
+
+    (defassertion type-name "//xsd:complexType[@name]"
+      :msg "type %s does not match [A-Z].*Type."
+      :validator (attr-matches "name" #"[A-Z].*Type")
+      :display-name "data(./@name)")
+
+    (defassertion element-form-default "/xsd:schema"
+      :msg "schema hasn't attr elementFormDefault=\"qualified\""
+      :validator (attr-eq "elementFormDefault" "qualified")))
+
+
+Using the macro ``as-html`` wrapps the result as html string with hiccup. (temporary unavailable)
 
 Regarding the xml::
 
@@ -76,4 +97,4 @@ TODO
 #. Maybe put it on top of compojure.
 #. Use an xpath to select the node identifyer, not just the attribute named 'name'. OK
 #. Validate assertions.
-#. Execute assertions grouped by path to avoid several queries on the xmldoc.
+#. Execute assertions grouped by path to avoid several queries on the xmldoc. OK
