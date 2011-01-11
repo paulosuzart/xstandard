@@ -15,8 +15,7 @@
 
 (defn get-attr
   "Return the `attr` value of `n`. Uses the xpath `data(./name)`.
-   Usage: `(get-attr n \"name\")`. Returns the attribute name if present.
-    "
+   Usage: `(get-attr n \"name\")`. Returns the attribute name if present."
   [n attr]
   (xml/query (str "data(./@" attr ")") n))
 
@@ -26,7 +25,7 @@
 
 (defn attr-present
   "`true` if the `attr` is present on `n`.
-  Usage: `(attr-present "targetNamespace")`."
+  Usage: `(attr-present \"targetNamespace\")`."
   [attr]
   (fn [n]
     (xml/query (str "exists(./@" attr ")") n)))
@@ -82,12 +81,9 @@
        :status result-status
        :display-name (or (display-name-exp n) (.toString (xml/node-name n)))
        :details
-       (if (not result-status)
-         {:result-msg result-msg
+         {:result-msg (if result-status "" result-msg)
           :line line-number
-          :path (xml/node-path n)}
-         {})
-       })))
+          :path (xml/node-path n)}})))
 
 
 (defmacro defassertion
@@ -120,7 +116,6 @@
                      //xsd:element (c)}
 
      Where `a`, `b` and `c` are assertions defined by `defassertion` macro."
-
   [n assertions]
   (loop [as assertions
          fs {:set-name n}]
@@ -137,11 +132,12 @@
    name is the name of the set and a* the assertions. i.e.:
 
     (defassertions my-set (defassertion ...) (defassertion ...))"
-
   [name & a]
-  (let [[n a] (name-with-attributes name a)
+  (let [[name a] (name-with-attributes name a)
         sname (str name)]
-    `(def ~n (make-assertions ~sname (list ~@a)))))
+    `(do
+      (def ~name (make-assertions ~sname (list ~@a)))
+      ~name)))
 
 (defn run
   "Run every assertion path againts the xmldocument and applies every found node to every
@@ -156,7 +152,7 @@
 
 
 
-;;# Default assertions provided by xstandard.
+;# Default assertions provided by xstandard.
 
 (defassertions *default-assertions*
 
@@ -187,16 +183,21 @@
 
 
 (defmacro as-html
-  "Simply wrapps the execution of check or check-default in html output."
-  [& f]
-  `(html [:html
+  "Simply wrapps the execution of run with html output."
+  [file-name & f]
+  `(spit ~file-name (html [:html
           [:head
            [:title "xstandard assertion result."]]
           [:body
            [:h2 {:class "header"} "Assertion result."]
-           [:table {:class "result-table"}
-            [:tr {:class "result-head"} [:th "Result Message"] [:th "Path to node in the XML document"]]
+           [:table {:class "result-table" :border 1}
+            [:tr {:class "result-head"}
+             [:th "Assertion"] [:th "Status"] [:th "Node"] [:td "Message"] [:td "Line"] [:td "Path"]]
             (for [r# ~@f]
               [:tr
-               [:td (:result-msg r#)]
-               [:td (:node-path r#)]])]]]))
+               [:td (:assertion r#)]
+               [:td (if (:status r#) "Passed" "Failed")]
+               [:td (:display-name r#)]
+               [:td (:result-msg (:details r#))]
+               [:td (:line (:details r#))]
+               [:td (:path (:details r#))]])]]])))

@@ -1,7 +1,6 @@
 (ns xstandard.test.core
   (:use [xstandard.core :as xs] :reload)
-  (:use [clojure.test])
-  (:use [clojure.string :only [blank?]]))
+  (:use [clojure.test]))
 
 (def xmldoc (xs/make-xml "./test/sample_1.xsd"))
 
@@ -10,5 +9,9 @@
   (testing "shoudl work"
   (let [result (xs/run xs/*default-assertions* xs/*nss* xmldoc)]
      (println result)
-     (is (= 1 1)))))
+     (is (= 1 1)))
+  (testing "should work2"
+    (let [result (xs/as-html "output.html" (xs/run xs/*default-assertions* xs/*nss* xmldoc))]
+      (println result)
+      (is (= 1 1))))))
 
