@@ -92,9 +92,9 @@
 
      `options` can be:
 
-      `:msg` message to be formated. Can take only one parameter (the node name)
-      `:validator` a function that takes the current node
-      `:display-name` a valid xpath or string to format msg with the right valie."
+      `:msg` message to be formated. Can take only one parameter (the node name) - mandatory
+      `:validator` a function that takes the current node -  mandatory
+      `:display-name` a valid xpath or string to format msg with the right valie - optional"
   [name p & options]
   (let [[name options] (name-with-attributes name options)]
     `(do

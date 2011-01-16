@@ -98,6 +98,6 @@ TODO
 #. Add (as-xml (check-default xmldoc)) to return the result in xml.
 #. Actually use the options arg of check to filter the results by valid results, invalid results, element, etc.
 #. Maybe put it on top of compojure.
-#. Use an xpath to select the node identifyer, not just the attribute named 'name'. OK
-#. Validate assertions.
+#. Use an xpath to select the node identifier, not just the attribute named 'name'. OK
+#. Validate assertions. Partially tested.
 #. Execute assertions grouped by path to avoid several queries on the xmldoc. OK

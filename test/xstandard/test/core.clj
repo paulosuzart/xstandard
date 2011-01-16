@@ -12,7 +12,7 @@
 ;; this is a dummy test. TODO cover all the lib.
 (deftest test-total
     (testing "should work"
-      (let [result (xs/as-html "output.html" (xs/run xs/*default-assertions* xs/*nss* xmldoc))]
+      (let [result (xs/run xs/*default-assertions* xs/*nss* xmldoc)]
         (println result)
         (is (= 1 1))))
 
