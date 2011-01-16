@@ -19,9 +19,6 @@
   [n attr]
   (xml/query (str "data(./@" attr ")") n))
 
-(defn name-attr
-  "Wraps a call to `get-attr`. Returns the `name` attribute of `n`."
-  [n] (get-attr n "name"))
 
 (defn attr-present
   "`true` if the `attr` is present on `n`.
